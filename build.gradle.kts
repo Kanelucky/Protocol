@@ -52,7 +52,10 @@ subprojects {
 
     configure<MavenPublishBaseExtension> {
         publishToMavenCentral()
-        signAllPublications()
+
+        if (System.getenv("JITPACK") == null) {
+            signAllPublications()
+        }
 
         coordinates(
             project.group.toString(),
