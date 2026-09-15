@@ -52,10 +52,6 @@ public class BedrockCodecHelper_v2192 extends BedrockCodecHelper_v2168 {
         buffer.writeByte(itemEntry.getCount());
         this.writeOptional(buffer, id -> id > 0, itemEntry.getStackNetworkId(), VarInts::writeInt);
         this.writeString(buffer, itemEntry.getCustomName());
-        // Fork sapması: boş süzülmüş ad "yok" olarak yazılır. Allay bu alana her zaman "" veriyor ve
-        // eski kodekler alanı düz string yazdığı için null veremiyor. Upstream'in writeOptionalNull'ı
-        // "" için dolu bir optional (1, 0) yazardı; bu kural 1.26.4x oyuncusuna giden baytı
-        // düzeltme öncesiyle aynı (0) bırakır.
         this.writeOptional(
                 buffer, name -> name != null && !name.isEmpty(), itemEntry.getFilteredCustomName(), this::writeString);
         VarInts.writeInt(buffer, itemEntry.getDurabilityCorrection());
