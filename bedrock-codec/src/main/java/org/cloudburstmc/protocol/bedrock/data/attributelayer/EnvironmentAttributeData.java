@@ -15,14 +15,21 @@ import org.cloudburstmc.protocol.bedrock.data.camera.CameraEase;
  * @param easing                 The easing.
  * @param localTransitionTicks   The number of ticks elapsed in the local transition since v1001.
  * @param noiseTransition        Whether the transition uses noise since v1001.
+ * @param noiseAlignment         Noise alignment (since v2192); {@code null} for older codecs.
  */
-public record EnvironmentAttributeData(String attributeName, @Nullable AttributeData from, AttributeData attribute,
-                                       @Nullable AttributeData to, int CurrentTransitionTicks,
-                                       int TotalTransitionTicks, CameraEase easing,
-                                       int localTransitionTicks, boolean noiseTransition) {
-    public EnvironmentAttributeData(String attributeName, @Nullable AttributeData from, AttributeData attribute,
-                                    @Nullable AttributeData to, int CurrentTransitionTicks,
-                                    int TotalTransitionTicks, CameraEase easing) {
-        this(attributeName, from, attribute, to, CurrentTransitionTicks, TotalTransitionTicks, easing, 0, false);
+public record EnvironmentAttributeData(String attributeName, @Nullable AttributeData from, AttributeData attribute, @Nullable AttributeData to, int CurrentTransitionTicks, int TotalTransitionTicks,
+                                       CameraEase easing, int localTransitionTicks, boolean noiseTransition, @Nullable NoiseAlignment noiseAlignment) {
+    public EnvironmentAttributeData(
+            String attributeName, @Nullable AttributeData from, AttributeData attribute, @Nullable AttributeData to, int CurrentTransitionTicks, int TotalTransitionTicks,
+            CameraEase easing
+    ) {
+        this(attributeName, from, attribute, to, CurrentTransitionTicks, TotalTransitionTicks, easing, 0, false, null);
+    }
+
+    public EnvironmentAttributeData(
+            String attributeName, @Nullable AttributeData from, AttributeData attribute, @Nullable AttributeData to, int CurrentTransitionTicks, int TotalTransitionTicks,
+            CameraEase easing, int localTransitionTicks, boolean noiseTransition
+    ) {
+        this(attributeName, from, attribute, to, CurrentTransitionTicks, TotalTransitionTicks, easing, localTransitionTicks, noiseTransition, null);
     }
 }
