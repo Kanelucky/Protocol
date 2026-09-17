@@ -14,6 +14,7 @@ import org.cloudburstmc.protocol.bedrock.codec.EntityDataTypeMap;
 import org.cloudburstmc.protocol.bedrock.codec.v975.BedrockCodecHelper_v975;
 import org.cloudburstmc.protocol.bedrock.data.Ability;
 import org.cloudburstmc.protocol.bedrock.data.GatheringsConfigurationJoinInfo;
+import org.cloudburstmc.protocol.bedrock.data.PresenceConfiguration;
 import org.cloudburstmc.protocol.bedrock.data.definitions.ItemDefinition;
 import org.cloudburstmc.protocol.bedrock.data.entity.EntityDataFormat;
 import org.cloudburstmc.protocol.bedrock.data.entity.EntityDataMap;
@@ -1012,6 +1013,7 @@ public class BedrockCodecHelper_v2168 extends BedrockCodecHelper_v975 {
         this.writeOptional(buffer, id -> id > 0, itemEntry.getStackNetworkId(), VarInts::writeInt);
         this.writeString(buffer, itemEntry.getCustomName());
         this.writeString(buffer, itemEntry.getFilteredCustomName());
+        this.writeOptional(buffer, name -> name != null && !name.isEmpty(), itemEntry.getFilteredCustomName(), this::writeString);
         VarInts.writeInt(buffer, itemEntry.getDurabilityCorrection());
     }
 
@@ -1237,6 +1239,11 @@ public class BedrockCodecHelper_v2168 extends BedrockCodecHelper_v975 {
         } else {
             buffer.writeBoolean(false);
         }
+    }
+
+    @Override
+    public void writePresenceConfiguration(ByteBuf buffer, PresenceConfiguration configuration) {
+        writeOptionalNull(buffer, configuration.richPresenceId(), this::writeString);
     }
 
     private static int parseSkinColor(String color) {
