@@ -14,7 +14,4 @@ import java.util.List;
  *               The fourth is #0 because there are only 3 parts of the persona_eyes skin piece.
  */
 public record PersonaPieceTintData(String type, List<String> colors) {
-    public PersonaPieceTintData {
-        type = PersonaPieceType.fromName(type).getSerializeName();
-    }
 }
