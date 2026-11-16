@@ -26,6 +26,6 @@ public record ItemDescriptorWithCount(ItemDescriptor descriptor, int count) {
         if (item == ItemData.AIR) {
             return EMPTY;
         }
-        return new ItemDescriptorWithCount(new DefaultDescriptor(item.getDefinition(), item.getDamage()), item.getCount());
+        return new ItemDescriptorWithCount(new DefaultDescriptor(item.getDefinition(), item.getDamage(), item.getDefinition().getIdentifier()), item.getCount());
     }
 }

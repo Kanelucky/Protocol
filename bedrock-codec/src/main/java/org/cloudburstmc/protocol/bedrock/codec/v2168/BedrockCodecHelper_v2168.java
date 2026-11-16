@@ -41,6 +41,7 @@ import org.cloudburstmc.protocol.bedrock.util.VarInts;
 import org.cloudburstmc.protocol.bedrock.util.stream.LittleEndianByteBufInputStream;
 import org.cloudburstmc.protocol.bedrock.util.stream.LittleEndianByteBufOutputStream;
 
+import java.awt.Color;
 import java.io.IOException;
 import java.util.*;
 
@@ -752,7 +753,7 @@ public class BedrockCodecHelper_v2168 extends BedrockCodecHelper_v975 {
         this.writeString(buffer, skin.getFullSkinId());
 
         buffer.writeByte("slim".equalsIgnoreCase(skin.getArmSize()) ? 0 : 1);
-        buffer.writeIntLE(parseSkinColor(skin.getSkinColor()));
+        buffer.writeIntLE(skin.getColor().getRGB());
 
         List<PersonaPieceData> pieces = skin.getPersonaPieces();
         VarInts.writeUnsignedInt(buffer, pieces.size());
@@ -816,7 +817,7 @@ public class BedrockCodecHelper_v2168 extends BedrockCodecHelper_v975 {
         }, this.getEncodingSettings().maxInventoryActionsOrRequests());
 
         List<String> filteredStrings = new ObjectArrayList<>();
-        this.readArray(buffer, filteredStrings, this::readString);
+        this.readArray(buffer, filteredStrings, buf -> this.readStringMaxLen(buf, 1000));
 
         int originVal = buffer.readIntLE();
         TextProcessingEventOrigin origin = originVal == -1 ? null : this.textProcessingEventOrigins.getType(originVal);
@@ -862,7 +863,7 @@ public class BedrockCodecHelper_v2168 extends BedrockCodecHelper_v975 {
                 if (definition == null && log.isDebugEnabled()) {
                     log.debug("No ItemDefinition for id {}, did proxy not set itemDefinitions?", id);
                 }
-                descriptor = new DefaultDescriptor(definition, aux);
+                descriptor = new DefaultDescriptor(definition, aux, id);
                 break;
             case MOLANG:
                 descriptor = new MolangDescriptor(this.readString(buffer), buffer.readShortLE());
@@ -874,7 +875,8 @@ public class BedrockCodecHelper_v2168 extends BedrockCodecHelper_v975 {
                 throw new UnsupportedOperationException("ItemDescriptorType");
         }
 
-        return new ItemDescriptorWithCount(descriptor, buffer.readUnsignedShortLE());
+        int count = buffer.readUnsignedShortLE();
+        return new ItemDescriptorWithCount(descriptor, count);
     }
 
     @Override
@@ -893,17 +895,17 @@ public class BedrockCodecHelper_v2168 extends BedrockCodecHelper_v975 {
             case INVALID:
                 break;
             case DEFAULT:
-                DefaultDescriptor defaultDescriptor = (DefaultDescriptor) descriptor;
+                DefaultDescriptor defaultDescriptor = (DefaultDescriptor) ingredient.descriptor();
                 this.writeString(buffer, defaultDescriptor.itemId().identifier());
                 VarInts.writeInt(buffer, defaultDescriptor.auxValue());
                 break;
             case MOLANG:
-                MolangDescriptor molangDescriptor = (MolangDescriptor) descriptor;
+                MolangDescriptor molangDescriptor = (MolangDescriptor) ingredient.descriptor();
                 this.writeString(buffer, molangDescriptor.tagExpression());
                 buffer.writeShortLE(molangDescriptor.molangVersion());
                 break;
             case ITEM_TAG:
-                ItemTagDescriptor tagDescriptor = (ItemTagDescriptor) descriptor;
+                ItemTagDescriptor tagDescriptor = (ItemTagDescriptor) ingredient.descriptor();
                 this.writeString(buffer, tagDescriptor.itemTag());
                 break;
             default:
@@ -933,7 +935,7 @@ public class BedrockCodecHelper_v2168 extends BedrockCodecHelper_v975 {
                 if (definition == null && log.isDebugEnabled()) {
                     log.debug("No ItemDefinition for id {}, did proxy not set itemDefinitions?", id);
                 }
-                descriptor = new DefaultDescriptor(definition, aux);
+                descriptor = new DefaultDescriptor(definition, aux, id);
                 break;
             case MOLANG:
                 descriptor = new MolangDescriptor(this.readString(buffer), buffer.readShortLE());
@@ -1041,7 +1043,7 @@ public class BedrockCodecHelper_v2168 extends BedrockCodecHelper_v975 {
             if (definition == null &&log.isDebugEnabled()) {
                 log.debug("No ItemDefinition for id {}, did proxy not set itemDefinitions?", id);
             }
-            descriptor = new DefaultDescriptor(definition, aux);
+            descriptor = new DefaultDescriptor(definition, aux, definition == null ? null : definition.identifier());
         }
 
         ItemDefinition definition = descriptor == InvalidDescriptor.INSTANCE ? ItemData.AIR.getDefinition() : ((DefaultDescriptor) descriptor).itemId();
@@ -1214,9 +1216,7 @@ public class BedrockCodecHelper_v2168 extends BedrockCodecHelper_v975 {
             case CONTAINER -> InventorySource.fromContainerWindowId(containerId);
             case GLOBAL -> InventorySource.fromGlobalInventory();
             case WORLD_INTERACTION -> {
-                if (flag == null) {
-                    throw new IllegalStateException();
-                }
+                if (flag == null) throw new IllegalStateException();
                 yield InventorySource.fromWorldInteraction(flag);
             }
             case CREATIVE -> InventorySource.fromCreativeInventory();
@@ -1229,6 +1229,7 @@ public class BedrockCodecHelper_v2168 extends BedrockCodecHelper_v975 {
     @Override
     public void writeSource(ByteBuf buffer, InventorySource inventorySource) {
         requireNonNull(inventorySource, "InventorySource was null");
+
         VarInts.writeUnsignedInt(buffer, inventorySource.type().id());
 
         buffer.writeBoolean(true);
@@ -1244,20 +1245,15 @@ public class BedrockCodecHelper_v2168 extends BedrockCodecHelper_v975 {
         }
 
         buffer.writeBoolean(true);
-        if (inventorySource.type() == InventorySource.Type.WORLD_INTERACTION) {
-            buffer.writeBoolean(true);
-            VarInts.writeUnsignedInt(buffer, inventorySource.flag().ordinal());
-        } else {
-            buffer.writeBoolean(false);
+        switch (inventorySource.type()) {
+            case WORLD_INTERACTION:
+                buffer.writeBoolean(true);
+                VarInts.writeUnsignedInt(buffer, inventorySource.flag().ordinal());
+                break;
+            default:
+                buffer.writeBoolean(false);
+                break;
         }
-    }
-
-    protected static int parseSkinColor(String color) {
-        if (color == null || color.isBlank()) {
-            return 0;
-        }
-        String value = color.charAt(0) == '#' ? color.substring(1) : color;
-        return (int) Long.parseLong(value, 16);
     }
 
     @Override

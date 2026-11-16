@@ -8,8 +8,10 @@ import org.cloudburstmc.protocol.bedrock.data.inventory.ItemData;
  *
  * @param itemId   The item ID.
  * @param auxValue The aux value.
+ * @param identifier The identifier.
  */
-public record DefaultDescriptor(ItemDefinition itemId, int auxValue) implements ItemDescriptor {
+public record DefaultDescriptor(ItemDefinition itemId, int auxValue, String identifier) implements ItemDescriptor {
+
     @Override
     public ItemDescriptorType getType() {
         return ItemDescriptorType.DEFAULT;

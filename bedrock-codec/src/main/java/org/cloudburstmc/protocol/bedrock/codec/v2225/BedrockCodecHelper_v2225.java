@@ -100,7 +100,7 @@ public class BedrockCodecHelper_v2225 extends BedrockCodecHelper_v2193 {
         String profileHash = this.readString(buffer);
 
         return SerializedSkin.of(skinId, playFabId, skinResourcePatch, skinData, animations, capeData, geometryData, geometryDataEngineVersion,
-                animationData, premium, persona, capeOnClassic, primaryUser, capeId, fullSkinId, armSize, skinColor, personaPieces, tintColors,
+                animationData, premium, persona, capeOnClassic, primaryUser, capeId, fullSkinId, armSize, color, personaPieces, tintColors,
                 overridingPlayerAppearance, trusted, profileHash);
     }
 
@@ -178,14 +178,13 @@ public class BedrockCodecHelper_v2225 extends BedrockCodecHelper_v2193 {
                 descriptor = InvalidDescriptor.INSTANCE;
                 break;
             case DEFAULT:
-                // The descriptor carries the auxiliary value both as a suffix and as a separate field.
-                String id = AUX_SUFFIX.matcher(this.readString(buffer)).replaceFirst("");
+                String id = AUX_SUFFIX.matcher(this.readString(buffer)).replaceFirst(""); // wtf why does it put aux here
                 int aux = VarInts.readInt(buffer);
                 ItemDefinition definition = this.itemDefinitions.getDefinition(id);
                 if (definition == null && log.isDebugEnabled()) {
                     log.debug("No ItemDefinition for id {} aux {}, did proxy not set itemDefinitions?", id, aux);
                 }
-                descriptor = new DefaultDescriptor(definition, aux);
+                descriptor = new DefaultDescriptor(definition, aux, id);
                 break;
             case MOLANG:
                 descriptor = new MolangDescriptor(this.readString(buffer), buffer.readShortLE());
@@ -200,4 +199,10 @@ public class BedrockCodecHelper_v2225 extends BedrockCodecHelper_v2193 {
 
         return descriptor;
     }
+
+    @Override
+    protected ItemDefinition resolveNamedIngredient(String identifier) {
+        return super.resolveNamedIngredient(AUX_SUFFIX.matcher(identifier).replaceFirst(""));
+    }
 }
+
