@@ -41,7 +41,6 @@ import org.cloudburstmc.protocol.bedrock.util.VarInts;
 import org.cloudburstmc.protocol.bedrock.util.stream.LittleEndianByteBufInputStream;
 import org.cloudburstmc.protocol.bedrock.util.stream.LittleEndianByteBufOutputStream;
 
-import java.awt.Color;
 import java.io.IOException;
 import java.util.*;
 
@@ -73,38 +72,18 @@ public class BedrockCodecHelper_v2168 extends BedrockCodecHelper_v975 {
 
             EntityDataFormat format = EntityDataFormat.values()[type];
 
-            Object value;
-            switch (format) {
-                case BYTE:
-                    value = buffer.readByte();
-                    break;
-                case SHORT:
-                    value = buffer.readShortLE();
-                    break;
-                case INT:
-                    value = VarInts.readInt(buffer);
-                    break;
-                case FLOAT:
-                    value = buffer.readFloatLE();
-                    break;
-                case STRING:
-                    value = readString(buffer);
-                    break;
-                case NBT:
-                    value = this.readTag(buffer, Object.class);
-                    break;
-                case VECTOR3I:
-                    value = readVector3i(buffer);
-                    break;
-                case LONG:
-                    value = VarInts.readLong(buffer);
-                    break;
-                case VECTOR3F:
-                    value = readVector3f(buffer);
-                    break;
-                default:
-                    throw new IllegalArgumentException("Unknown entity data type received");
-            }
+            Object value = switch (format) {
+                case BYTE -> buffer.readByte();
+                case SHORT -> buffer.readShortLE();
+                case INT -> VarInts.readInt(buffer);
+                case FLOAT -> buffer.readFloatLE();
+                case STRING -> readString(buffer);
+                case NBT -> this.readTag(buffer, Object.class);
+                case VECTOR3I -> readVector3i(buffer);
+                case LONG -> VarInts.readLong(buffer);
+                case VECTOR3F -> readVector3f(buffer);
+                default -> throw new IllegalArgumentException("Unknown entity data type received");
+            };
 
             EntityDataTypeMap.Definition<?>[] definitions = this.entityData.fromId(id, format);
             if (definitions != null) {
@@ -753,7 +732,7 @@ public class BedrockCodecHelper_v2168 extends BedrockCodecHelper_v975 {
         this.writeString(buffer, skin.getFullSkinId());
 
         buffer.writeByte("slim".equalsIgnoreCase(skin.getArmSize()) ? 0 : 1);
-        buffer.writeIntLE(skin.getColor().getRGB());
+        buffer.writeIntLE(parseSkinColor(skin.getSkinColor()));
 
         List<PersonaPieceData> pieces = skin.getPersonaPieces();
         VarInts.writeUnsignedInt(buffer, pieces.size());
@@ -817,7 +796,7 @@ public class BedrockCodecHelper_v2168 extends BedrockCodecHelper_v975 {
         }, this.getEncodingSettings().maxInventoryActionsOrRequests());
 
         List<String> filteredStrings = new ObjectArrayList<>();
-        this.readArray(buffer, filteredStrings, buf -> this.readStringMaxLen(buf, 1000));
+        this.readArray(buffer, filteredStrings, this::readString);
 
         int originVal = buffer.readIntLE();
         TextProcessingEventOrigin origin = originVal == -1 ? null : this.textProcessingEventOrigins.getType(originVal);
@@ -1259,6 +1238,18 @@ public class BedrockCodecHelper_v2168 extends BedrockCodecHelper_v975 {
     @Override
     public void writePresenceConfiguration(ByteBuf buffer, PresenceConfiguration configuration) {
         writeOptionalNull(buffer, configuration.richPresenceId(), this::writeString);
+    }
+
+    protected ItemDefinition resolveNamedIngredient(String identifier) {
+        return this.itemDefinitions.getDefinition(identifier);
+    }
+
+    protected static int parseSkinColor(String color) {
+        if (color == null || color.isBlank()) {
+            return 0;
+        }
+        String value = color.charAt(0) == '#' ? color.substring(1) : color;
+        return (int) Long.parseLong(value, 16);
     }
 
     @Override

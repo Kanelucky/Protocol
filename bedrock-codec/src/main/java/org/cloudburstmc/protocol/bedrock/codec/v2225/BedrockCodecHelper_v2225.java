@@ -100,7 +100,7 @@ public class BedrockCodecHelper_v2225 extends BedrockCodecHelper_v2193 {
         String profileHash = this.readString(buffer);
 
         return SerializedSkin.of(skinId, playFabId, skinResourcePatch, skinData, animations, capeData, geometryData, geometryDataEngineVersion,
-                animationData, premium, persona, capeOnClassic, primaryUser, capeId, fullSkinId, armSize, color, personaPieces, tintColors,
+                animationData, premium, persona, capeOnClassic, primaryUser, capeId, fullSkinId, armSize, skinColor, personaPieces, tintColors,
                 overridingPlayerAppearance, trusted, profileHash);
     }
 
